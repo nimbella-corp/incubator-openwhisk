@@ -594,8 +594,7 @@ trait WhiskWebActionsApi
           }
 
         case HttpEntity.Strict(contentType, data) =>
-          // for legacy, we are encoding application/json still
-          if (contentType.mediaType.binary || contentType.mediaType == `application/json`) {
+          if (contentType.mediaType.binary) {
             Try(JsString(Base64.getEncoder.encodeToString(data.toArray))) match {
               case Success(bytes) => process(Some(bytes), isRawHttpAction)
               case Failure(t)     => terminate(BadRequest, Messages.unsupportedContentType(contentType.mediaType))

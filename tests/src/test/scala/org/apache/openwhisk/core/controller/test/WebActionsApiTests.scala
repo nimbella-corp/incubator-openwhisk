@@ -1749,9 +1749,10 @@ trait WebActionsApiBaseTests extends ControllerTestCommon with BeforeAndAfterEac
           "action" -> "raw_export_c".toJson,
           "content" -> metaPayload(
             Post.method.name.toLowerCase,
-            Map(webApiDirectives.query -> "".toJson, webApiDirectives.body -> Base64.getEncoder.encodeToString {
-              JsObject("x" -> JsString("overriden"), "key2" -> JsString("value2")).compactPrint.getBytes
-            }.toJson).toJson.asJsObject,
+            Map(
+              webApiDirectives.query -> "".toJson,
+              webApiDirectives.body ->
+                JsObject("x" -> JsString("overriden"), "key2" -> JsString("value2")).compactPrint.toJson).toJson.asJsObject,
             creds,
             pkgName = "proxy",
             headers = List(`Content-Type`(ContentTypes.`application/json`))))
@@ -1777,9 +1778,7 @@ trait WebActionsApiBaseTests extends ControllerTestCommon with BeforeAndAfterEac
             "action" -> "raw_export_c".toJson,
             "content" -> metaPayload(
               Post.method.name.toLowerCase,
-              Map(webApiDirectives.body -> Base64.getEncoder.encodeToString {
-                str.getBytes
-              }.toJson, webApiDirectives.query -> queryString.toJson).toJson.asJsObject,
+              Map(webApiDirectives.body -> str.toJson, webApiDirectives.query -> queryString.toJson).toJson.asJsObject,
               creds,
               pkgName = "proxy",
               headers = List(`Content-Type`(ContentTypes.`application/json`))))
