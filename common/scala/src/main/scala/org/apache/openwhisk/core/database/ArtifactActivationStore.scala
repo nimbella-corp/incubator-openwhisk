@@ -84,7 +84,7 @@ class ArtifactActivationStore(actorSystem: ActorSystem, actorMaterializer: Actor
       skip,
       since,
       upto,
-      StaleParameter.UpdateAfter,
+      StaleParameter.No,
       name.map(_ => WhiskActivation.filtersView).getOrElse(WhiskActivation.view))
   }
 
@@ -106,7 +106,7 @@ class ArtifactActivationStore(actorSystem: ActorSystem, actorMaterializer: Actor
       includeDocs,
       since,
       upto,
-      StaleParameter.UpdateAfter)
+      StaleParameter.No)
   }
 
   def listActivationsInNamespace(
@@ -125,7 +125,7 @@ class ArtifactActivationStore(actorSystem: ActorSystem, actorMaterializer: Actor
       includeDocs,
       since,
       upto,
-      StaleParameter.UpdateAfter)
+      StaleParameter.No)
   }
 
 }
