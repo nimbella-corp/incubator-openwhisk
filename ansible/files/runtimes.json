@@ -32,9 +32,9 @@
                 "kind": "nodejs:8",
                 "default": false,
                 "image": {
-                    "prefix": "openwhisk",
+                    "prefix": "ibmfunctions",
                     "name": "action-nodejs-v8",
-                    "tag": "nightly"
+                    "tag": "1.36.0"
                 },
                 "deprecated": false,
                 "attached": {
@@ -46,9 +46,9 @@
                 "kind": "nodejs:10",
                 "default": true,
                 "image": {
-                    "prefix": "openwhisk",
+                    "prefix": "ibmfunctions",
                     "name": "action-nodejs-v10",
-                    "tag": "nightly"
+                    "tag": "1.9.0"
                 },
                 "deprecated": false,
                 "attached": {
