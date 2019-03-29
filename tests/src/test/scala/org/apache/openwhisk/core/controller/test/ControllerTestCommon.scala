@@ -30,7 +30,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import spray.json._
 import org.apache.openwhisk.common.TransactionId
-import org.apache.openwhisk.core.{FeatureFlags, WhiskConfig}
+import org.apache.openwhisk.core.WhiskConfig
 import org.apache.openwhisk.core.connector.ActivationMessage
 import org.apache.openwhisk.core.containerpool.logging.LogStoreProvider
 import org.apache.openwhisk.core.controller.{CustomHeaders, RestApiCommons, WhiskServices}
@@ -97,13 +97,9 @@ protected trait ControllerTestCommon
     r should be(expected)
   }
 
-  def systemAnnotations(kind: String, create: Boolean = true): Parameters = {
-    val base = if (create && FeatureFlags.requireApiKeyAnnotation) {
-      Parameters(Annotations.ProvideApiKeyAnnotationName, JsFalse)
-    } else {
-      Parameters()
-    }
-    base ++ Parameters(WhiskAction.execFieldName, kind)
+  def systemAnnotations(kind: String): Parameters = {
+    Parameters(Annotations.ProvideApiKeyAnnotationName, JsFalse) ++
+      Parameters(WhiskAction.execFieldName, kind)
   }
 
   val entityStore = WhiskEntityStore.datastore()

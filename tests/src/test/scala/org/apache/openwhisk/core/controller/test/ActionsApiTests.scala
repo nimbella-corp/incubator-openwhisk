@@ -632,8 +632,8 @@ class ActionsApiTests extends ControllerTestCommon with WhiskActionsApi {
     }
   }
 
-  // this test is to ensure pre-existing actions can continue to to opt-out of new system annotations
-  it should "preserve annotations on pre-existing actions" in {
+  // this test is to ensure pre-existing actions will have new system annotations added
+  it should "add annotations to pre-existing actions" in {
     implicit val tid = transid()
     val action = WhiskAction(namespace, aname(), jsDefault(""))
     put(entityStore, action, false) // install the action into the database directly
@@ -653,7 +653,7 @@ class ActionsApiTests extends ControllerTestCommon with WhiskActionsApi {
           action.limits,
           action.version.upPatch,
           action.publish,
-          action.annotations ++ Parameters(WhiskAction.execFieldName, action.exec.kind)))
+          action.annotations ++ systemAnnotations(action.exec.kind)))
     }
 
     content = """{"annotations":[{"key":"a","value":"B"}]}""".parseJson.asJsObject
@@ -672,7 +672,7 @@ class ActionsApiTests extends ControllerTestCommon with WhiskActionsApi {
           action.limits,
           action.version.upPatch.upPatch,
           action.publish,
-          action.annotations ++ Parameters("a", "B") ++ Parameters(WhiskAction.execFieldName, action.exec.kind)))
+          action.annotations ++ Parameters("a", "B") ++ systemAnnotations(action.exec.kind)))
     }
   }
 
@@ -1290,7 +1290,7 @@ class ActionsApiTests extends ControllerTestCommon with WhiskActionsApi {
           actionOldSchema.limits,
           actionOldSchema.version.upPatch,
           actionOldSchema.publish,
-          actionOldSchema.annotations ++ systemAnnotations(NODEJS10, create = false)))
+          actionOldSchema.annotations ++ systemAnnotations(NODEJS10)))
     }
 
     stream.toString should include regex (expectedPutLog)
@@ -1315,7 +1315,7 @@ class ActionsApiTests extends ControllerTestCommon with WhiskActionsApi {
           actionOldSchema.limits,
           actionOldSchema.version.upPatch,
           actionOldSchema.publish,
-          actionOldSchema.annotations ++ systemAnnotations(NODEJS10, create = false)))
+          actionOldSchema.annotations ++ systemAnnotations(NODEJS10)))
     }
   }
 
@@ -1361,7 +1361,8 @@ class ActionsApiTests extends ControllerTestCommon with WhiskActionsApi {
             content.limits.get.logs.get,
             content.limits.get.concurrency.get),
           version = action.version.upPatch,
-          annotations = action.annotations ++ systemAnnotations(NODEJS10, create = false)))
+          annotations = action.annotations ++ systemAnnotations(NODEJS10))
+      }
     }
   }
 
@@ -1382,7 +1383,8 @@ class ActionsApiTests extends ControllerTestCommon with WhiskActionsApi {
           action.exec,
           content.parameters.get,
           version = action.version.upPatch,
-          annotations = action.annotations ++ systemAnnotations(NODEJS10, false)))
+          annotations = action.annotations ++ systemAnnotations(NODEJS10))
+      }
     }
   }
 
