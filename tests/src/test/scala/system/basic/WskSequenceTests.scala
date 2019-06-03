@@ -190,7 +190,7 @@ class WskSequenceTests extends TestHelpers with WskTestHelpers with StreamLoggin
     }
     // update x with limit echo
     val limit: Int = {
-      val response = RestAssured.given.config(sslconfig).get(getServiceURL)
+      val response = RestAssured.given.config(sslconfig).get(getServiceURL + "/api/v1")
       response.statusCode should be(200)
       response.body.asString.parseJson.asJsObject.fields("limits").asJsObject.fields("sequence_length").convertTo[Int]
     }

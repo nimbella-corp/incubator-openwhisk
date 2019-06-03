@@ -23,6 +23,7 @@ import akka.event.Logging.InfoLevel
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.model.StatusCodes.PermanentRedirect
 import akka.stream.ActorMaterializer
 import kamon.Kamon
 import pureconfig._
@@ -66,13 +67,13 @@ import scala.util.{Failure, Success}
  *
  * Uses the Akka routing DSL: http://doc.akka.io/docs/akka-http/current/scala/http/routing-dsl/overview.html
  *
- * @param config A set of properties needed to run an instance of the controller service
  * @param instance if running in scale-out, a unique identifier for this instance in the group
- * @param verbosity logging verbosity
- * @param executionContext Scala runtime support for concurrent operations
+ * @param whiskConfig A set of properties needed to run an instance of the controller service
+ * @param actorSystem An actor system used for dyspathing API route handlers
+ * @param materializer An actor materializer
+ * @param logging A logger instance
  */
 class Controller(val instance: ControllerInstanceId,
-                 runtimes: Runtimes,
                  implicit val whiskConfig: WhiskConfig,
                  implicit val actorSystem: ActorSystem,
                  implicit val materializer: ActorMaterializer,
@@ -92,10 +93,8 @@ class Controller(val instance: ControllerInstanceId,
    * @see http://doc.akka.io/docs/akka-http/current/scala/http/routing-dsl/routes.html#composing-routes
    */
   override def routes(implicit transid: TransactionId): Route = {
-    super.routes ~ {
-      (pathEndOrSingleSlash & get) {
-        complete(info)
-      }
+    super.routes ~ (pathEndOrSingleSlash & get) {
+      redirect(apiV1.basepath(), PermanentRedirect)
     } ~ apiV1.routes ~ swagger.swaggerRoutes ~ internalInvokerHealth
   }
 
@@ -154,15 +153,6 @@ class Controller(val instance: ControllerInstanceId,
       }
     }
   }
-
-  // controller top level info
-  private val info = Controller.info(
-    whiskConfig,
-    TimeLimit.config,
-    MemoryLimit.config,
-    LogLimit.config,
-    runtimes,
-    List(apiV1.basepath()))
 }
 
 /**
@@ -182,18 +172,18 @@ object Controller {
       SpiLoader.get[LoadBalancerProvider].requiredProperties ++
       EntitlementProvider.requiredProperties
 
-  private def info(config: WhiskConfig,
-                   timeLimit: TimeLimitConfig,
-                   memLimit: MemoryLimitConfig,
-                   logLimit: MemoryLimitConfig,
-                   runtimes: Runtimes,
-                   apis: List[String]) =
+  def info(config: WhiskConfig,
+           timeLimit: TimeLimitConfig,
+           memLimit: MemoryLimitConfig,
+           logLimit: MemoryLimitConfig,
+           runtimes: Runtimes,
+           api: JsObject) =
     JsObject(
       "description" -> "OpenWhisk".toJson,
       "support" -> JsObject(
         "github" -> "https://github.com/apache/openwhisk/issues".toJson,
         "slack" -> "http://slack.openwhisk.org".toJson),
-      "api_paths" -> apis.toJson,
+      "api_info" -> api,
       "limits" -> JsObject(
         "actions_per_minute" -> config.actionInvokePerMinuteLimit.toInt.toJson,
         "triggers_per_minute" -> config.triggerFirePerMinuteLimit.toInt.toJson,
@@ -257,13 +247,7 @@ object Controller {
 
     ExecManifest.initialize(config) match {
       case Success(_) =>
-        val controller = new Controller(
-          instance,
-          ExecManifest.runtimesManifest,
-          config,
-          actorSystem,
-          ActorMaterializer.create(actorSystem),
-          logger)
+        val controller = new Controller(instance, config, actorSystem, ActorMaterializer.create(actorSystem), logger)
 
         val httpsConfig =
           if (Controller.protocol == "https") Some(loadConfigOrThrow[HttpsConfig]("whisk.controller.https")) else None

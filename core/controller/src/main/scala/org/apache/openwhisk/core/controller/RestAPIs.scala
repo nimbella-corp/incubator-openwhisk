@@ -77,7 +77,7 @@ protected[controller] class SwaggerDocs(apipath: Uri.Path, doc: String)(implicit
   }
 
   /** Forces add leading slash for swagger api-doc url rewrite to work. */
-  private def apiDocsUrl = basepath(apipath / swaggerdocpath)
+  private val apiDocsUrl = basepath(apipath / swaggerdocpath)
 }
 
 protected[controller] object RestApiCommons {
@@ -184,21 +184,28 @@ class RestAPIVersion(config: WhiskConfig, apiPath: String, apiVersion: String)(
   /**
    * Describes details of a particular API path.
    */
-  val info = (pathEndOrSingleSlash & get) {
-    complete(
-      JsObject(
-        "description" -> "OpenWhisk API".toJson,
-        "api_version" -> SemVer(1, 0, 0).toJson,
-        "api_version_path" -> apiVersion.toJson,
-        "build" -> whiskInfo.date.toJson,
-        "buildno" -> whiskInfo.buildNo.toJson,
-        "swagger_paths" -> JsObject("ui" -> s"/$swaggeruipath".toJson, "api-docs" -> s"/$swaggerdocpath".toJson)))
+  val info = {
+    val api = JsObject(
+      "version" -> SemVer(1, 0, 0).toJson,
+      "build" -> whiskInfo.date.toJson,
+      "buildno" -> whiskInfo.buildNo.toJson,
+      "swagger_paths" -> JsObject("ui" -> s"/$swaggeruipath".toJson, "api-docs" -> s"/$swaggerdocpath".toJson))
+
+    Controller.info(
+      whiskConfig,
+      TimeLimit.config,
+      MemoryLimit.config,
+      LogLimit.config,
+      ExecManifest.runtimesManifest,
+      api)
   }
 
   def routes(implicit transid: TransactionId): Route = {
     prefix {
       sendCorsHeaders {
-        info ~
+        (pathEndOrSingleSlash & get) {
+          complete(info)
+        } ~
           authenticationDirectiveProvider.authenticate(transid, authStore, logging) { user =>
             namespaces.routes(user) ~
               pathPrefix(Collection.NAMESPACES) {

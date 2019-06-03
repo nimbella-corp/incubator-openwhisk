@@ -36,7 +36,7 @@ import system.rest.RestUtil
 class ControllerApiTests extends FlatSpec with RestUtil with Matchers with StreamLogging {
 
   it should "ensure controller returns info" in {
-    val response = RestAssured.given.config(sslconfig).get(getServiceURL)
+    val response = RestAssured.given.config(sslconfig).get(getServiceURL + "/api/v1")
     val config = new WhiskConfig(
       Map(
         WhiskConfig.actionInvokePerMinuteLimit -> null,
@@ -51,7 +51,6 @@ class ControllerApiTests extends FlatSpec with RestUtil with Matchers with Strea
         "github" -> "https://github.com/apache/openwhisk/issues".toJson,
         "slack" -> "http://slack.openwhisk.org".toJson),
       "description" -> "OpenWhisk".toJson,
-      "api_paths" -> JsArray("/api/v1".toJson),
       "runtimes" -> ExecManifest.runtimesManifest.toJson,
       "limits" -> JsObject(
         "actions_per_minute" -> config.actionInvokePerMinuteLimit.toInt.toJson,
@@ -64,8 +63,15 @@ class ControllerApiTests extends FlatSpec with RestUtil with Matchers with Strea
         "max_action_memory" -> MemoryLimit.config.max.toBytes.toJson,
         "min_action_logs" -> LogLimit.config.min.toBytes.toJson,
         "max_action_logs" -> LogLimit.config.max.toBytes.toJson))
+
     response.statusCode should be(200)
-    response.body.asString.parseJson shouldBe (expectedJson)
+    val controllerResponse = response.body.asString.parseJson.asJsObject
+
+    JsObject(controllerResponse.fields - "api_info") shouldBe (expectedJson)
+    controllerResponse
+      .fields("api_info")
+      .asJsObject
+      .getFields("version", "build", "buildno", "swagger_paths") should have length 4
   }
 
 }

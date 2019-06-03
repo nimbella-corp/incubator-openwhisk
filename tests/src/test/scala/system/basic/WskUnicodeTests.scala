@@ -40,7 +40,7 @@ class WskUnicodeTests extends TestHelpers with WskTestHelpers with JsHelpers wit
   import WskUnicodeTests._
 
   val actionKinds: Iterable[Kind] = {
-    val response = RestAssured.given.config(sslconfig).get(getServiceURL)
+    val response = RestAssured.given.config(sslconfig).get(getServiceURL + "/api/v1")
     response.statusCode should be(200)
 
     val mf = response.body.asString.parseJson.asJsObject.fields("runtimes").asJsObject
