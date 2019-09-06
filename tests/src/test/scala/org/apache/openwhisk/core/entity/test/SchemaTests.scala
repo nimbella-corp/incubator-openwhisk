@@ -136,6 +136,42 @@ class SchemaTests extends FlatSpec with BeforeAndAfter with ExecHelpers with Mat
     Identity.rowToIdentity(json, "test") shouldBe id
   }
 
+  it should "serdes read a generic identity with an auxiliary field" in {
+    val uuid = UUID()
+    val subject = Subject("test_subject")
+    val entity = EntityName("test_subject")
+    val genericAuthKey = new GenericAuthKey(JsObject("test_key" -> "test_value".toJson))
+    val i = WhiskAuthHelpers
+      .newIdentityGenricAuth(subject, uuid, genericAuthKey)
+      .copy(auxiliary = Some(JsObject("some" -> JsString("thing"))))
+
+    val json = JsObject(
+      "subject" -> Subject("test_subject").toJson,
+      "namespace" -> Namespace(entity, uuid).toJson,
+      "authkey" -> JsObject("test_key" -> "test_value".toJson),
+      "rights" -> Array("READ", "PUT", "DELETE", "ACTIVATE").toJson,
+      "auxiliary" -> JsObject("some" -> JsString("thing")),
+      "limits" -> JsObject.empty)
+    Identity.serdes.read(json) shouldBe i
+  }
+
+  it should "deserialize view result with auxiliary property" in {
+    implicit val tid = TransactionId("test")
+    val subject = Subject("test_subject")
+    val id = WhiskAuthHelpers.newIdentity(subject).copy(auxiliary = Some(JsObject("some" -> JsString("thing"))))
+
+    val json = JsObject(
+      "id" -> subject.asString.toJson,
+      "value" -> JsObject(
+        "uuid" -> id.authkey.asInstanceOf[BasicAuthenticationAuthKey].uuid.toJson,
+        "key" -> id.authkey.asInstanceOf[BasicAuthenticationAuthKey].key.toJson,
+        "namespace" -> "test_subject".toJson,
+        "auxiliary" -> JsObject("some" -> JsString("thing"))),
+      "doc" -> JsNull)
+
+    Identity.rowToIdentity(json, "test") shouldBe id
+  }
+
   behavior of "DocInfo"
 
   it should "accept well formed doc info" in {

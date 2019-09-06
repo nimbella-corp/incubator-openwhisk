@@ -40,6 +40,7 @@ import scala.util.{Properties, Try}
 class UserCommand extends Subcommand("user") with WhiskCommand {
   descr("manage users")
 
+  // Note: there is no way to attach auxillary information to a namespace in this tool yet
   class CreateUserCmd extends Subcommand("create") {
     descr("create a user and show authorization key")
     val auth =
@@ -163,6 +164,7 @@ class UserCommand extends Subcommand("user") with WhiskCommand {
     result
   }
 
+  // NOTE: this method does not preserve any auxiliary information on a namespace
   def createUser(authStore: AuthStore)(implicit transid: TransactionId,
                                        ec: ExecutionContext): Future[Either[CommandError, String]] = {
     val authKey = create.auth.map(BasicAuthenticationAuthKey(_)).getOrElse(BasicAuthenticationAuthKey())

@@ -52,6 +52,7 @@ protected[core] object Namespace extends DefaultJsonProtocol {
 protected[core] case class Identity(subject: Subject,
                                     namespace: Namespace,
                                     authkey: GenericAuthKey,
+                                    auxiliary: Option[JsObject] = None,
                                     rights: Set[Privilege] = Set.empty,
                                     limits: UserLimits = UserLimits.standardUserLimits)
 
@@ -65,7 +66,7 @@ object Identity extends MultipleReadersSingleWriterCache[Option[Identity], DocIn
   // malicious namespace patterns
   override val fixedCacheSize = 100000
 
-  implicit val serdes = jsonFormat5(Identity.apply)
+  implicit val serdes = jsonFormat6(Identity.apply)
 
   /**
    * Retrieves a key for namespace.
@@ -141,10 +142,12 @@ object Identity extends MultipleReadersSingleWriterCache[Option[Identity], DocIn
         val JsString(uuid) = value("uuid")
         val JsString(secret) = value("key")
         val JsString(namespace) = value("namespace")
+        val auxiliary = value.get("auxiliary").map(_.convertTo[JsObject])
         Identity(
           subject,
           Namespace(EntityName(namespace), UUID(uuid)),
           BasicAuthenticationAuthKey(UUID(uuid), Secret(secret)),
+          auxiliary,
           Privilege.ALL,
           limits)
       case _ =>

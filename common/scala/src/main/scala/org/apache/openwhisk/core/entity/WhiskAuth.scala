@@ -24,19 +24,32 @@ import scala.util.Try
  * Represents a namespace for a subject as stored in the authentication
  * database. Each namespace has its own key which is used to determine
  * the {@ Identity} of the user calling.
+ *
+ * A namespace may have an optional auxiliary property for additional
+ * attributes. Currently these are opaque to the system, and wskadmin
+ * tools do not read, write, or propagate them.
  */
-protected[core] case class WhiskNamespace(namespace: Namespace, authkey: BasicAuthenticationAuthKey)
+protected[core] case class WhiskNamespace(namespace: Namespace,
+                                          authkey: BasicAuthenticationAuthKey,
+                                          auxiliary: Option[JsObject] = None)
 
 protected[core] object WhiskNamespace extends DefaultJsonProtocol {
   implicit val serdes = new RootJsonFormat[WhiskNamespace] {
     def write(w: WhiskNamespace) =
-      JsObject("name" -> w.namespace.name.toJson, "uuid" -> w.namespace.uuid.toJson, "key" -> w.authkey.key.toJson)
+      JsObject(
+        "name" -> w.namespace.name.toJson,
+        "uuid" -> w.namespace.uuid.toJson,
+        "key" -> w.authkey.key.toJson,
+        "auxiliary" -> w.auxiliary.toJson)
 
     def read(value: JsValue) =
       Try {
-        value.asJsObject.getFields("name", "uuid", "key") match {
+        value.asJsObject.getFields("name", "uuid", "key", "auxiliary") match {
           case Seq(JsString(n), JsString(u), JsString(k)) =>
-            WhiskNamespace(Namespace(EntityName(n), UUID(u)), BasicAuthenticationAuthKey(UUID(u), Secret(k)))
+            WhiskNamespace(Namespace(EntityName(n), UUID(u)), BasicAuthenticationAuthKey(UUID(u), Secret(k)), None)
+
+          case Seq(JsString(n), JsString(u), JsString(k), a: JsObject) =>
+            WhiskNamespace(Namespace(EntityName(n), UUID(u)), BasicAuthenticationAuthKey(UUID(u), Secret(k)), Some(a))
         }
       } getOrElse deserializationError("namespace record malformed")
   }
